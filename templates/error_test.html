@@ -1,0 +1,25 @@
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>Error-only Test</title></head>
+<body>
+  <h1>Error-only Test</h1>
+  {% if questions %}
+  <form method="post" action="/submit_error_test">
+    {% for id, word, definition in questions %}
+      <div class="q">
+        <h3>{{ loop.index }}. {{ word }}</h3>
+        <p>{{ definition }}</p>
+        <input type="hidden" name="word_id" value="{{ id }}">
+        <label><input type="radio" name="is_correct_{{ id }}" value="1" required> I got it right this time</label>
+        <label><input type="radio" name="is_correct_{{ id }}" value="0"> Still wrong</label>
+      </div>
+      <hr>
+    {% endfor %}
+    <button type="submit">Submit</button>
+  </form>
+  {% else %}
+    <p>No errors to review. Great job!</p>
+  {% endif %}
+  <p><a href="/dashboard">Back to Dashboard</a></p>
+</body>
+</html>
