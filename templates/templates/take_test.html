@@ -9,8 +9,8 @@
         <h3>{{ loop.index }}. {{ word }}</h3>
         <p>{{ definition }}</p>
         <input type="hidden" name="word_id" value="{{ id }}">
-        <label><input type="radio" name="is_correct" value="1" required> I know this</label>
-        <label><input type="radio" name="is_correct" value="0"> I don't know</label>
+        <label><input type="radio" name="is_correct_{{ id }}" value="1" required> I know this</label>
+        <label><input type="radio" name="is_correct_{{ id }}" value="0"> I don't know</label>
       </div>
       <hr>
     {% endfor %}
