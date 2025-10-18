@@ -28,15 +28,17 @@
             </div>
             
             <div class="word-of-day">
-                <h2>Word of the Day</h2>
+                <h2>Today's Words</h2>
+                {% for word in today_words %}
                 <div class="word-card">
-                    <h3 class="word-title">{{ daily_word.word }}</h3>
+                    <h3 class="word-title">{{ word.word }}</h3>
                     <div class="word-content">
-                        <p><strong>Definition:</strong> {{ daily_word.definition }}</p>
-                        <p><strong>Example:</strong> {{ daily_word.example }}</p>
+                        <p><strong>Definition:</strong> {{ word.definition }}</p>
+                        <p><strong>Example:</strong> {{ word.example }}</p>
                     </div>
-                    <button onclick="markLearned({{ daily_word.id }})" class="btn-primary">Mark as Learned</button>
+                    <button onclick="markLearned({{ word.id }})" class="btn-primary">Mark as Learned</button>
                 </div>
+                {% endfor %}
             </div>
             
             {% if recent_words %}
