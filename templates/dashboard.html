@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard - Alpha Learn</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <h1>Alpha Learn</h1>
+            <div class="nav-links">
+                <span>Welcome, {{ session.username }}!</span>
+                <a href="{{ url_for('review') }}" class="btn-secondary">Review Words</a>
+                <a href="{{ url_for('logout') }}" class="btn-secondary">Logout</a>
+            </div>
+        </div>
+    </nav>
+    
+    <div class="container">
+        <div class="dashboard">
+            <div class="stats-section">
+                <div class="stat-card">
+                    <h3>Words Learned</h3>
+                    <p class="stat-number">{{ words_learned }}</p>
+                </div>
+            </div>
+            
+            <div class="word-of-day">
+                <h2>Word of the Day</h2>
+                <div class="word-card">
+                    <h3 class="word-title">{{ daily_word.word }}</h3>
+                    <div class="word-content">
+                        <p><strong>Definition:</strong> {{ daily_word.definition }}</p>
+                        <p><strong>Example:</strong> {{ daily_word.example }}</p>
+                    </div>
+                    <button onclick="markLearned({{ daily_word.id }})" class="btn-primary">Mark as Learned</button>
+                </div>
+            </div>
+            
+            {% if recent_words %}
+            <div class="recent-words">
+                <h2>Recently Learned Words</h2>
+                <div class="words-list">
+                    {% for word in recent_words %}
+                    <div class="word-item">
+                        <h4>{{ word[0] }}</h4>
+                        <p>{{ word[1] }}</p>
+                        <span class="review-count">Reviewed {{ word[2] }} times</span>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+    
+    <script>
+        function markLearned(wordId) {
+            fetch('/mark_learned', {
+                method: 'POST',
+                headers: {'Content-Type': 'application/x-www-form-urlencoded'},
+                body: 'word_id=' + wordId
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert('Word marked as learned!');
+                    location.reload();
+                }
+            })
+            .catch(error => console.error('Error:', error));
+        }
+    </script>
+</body>
+</html>
