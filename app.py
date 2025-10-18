@@ -8,15 +8,12 @@ from functools import wraps
 
 app = Flask(__name__)
 app.secret_key = os.urandom(24)
-
 DB_PATH = 'alphalearn.db'
 
 # -------------------- Database initialization --------------------
-
 def init_db():
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
-
     # Users table
     c.execute('''CREATE TABLE IF NOT EXISTS users (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -24,13 +21,11 @@ def init_db():
         password TEXT NOT NULL,
         created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
     )''')
-
     # Daily sets table - one row per date for 26 unique words
     c.execute('''CREATE TABLE IF NOT EXISTS daily_sets (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
         date_assigned DATE UNIQUE NOT NULL
     )''')
-
     # Words table - stores all words; a word can appear in many days but each day has 26 unique rows
     c.execute('''CREATE TABLE IF NOT EXISTS words (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -38,7 +33,6 @@ def init_db():
         definition TEXT,
         example TEXT
     )''')
-
     # Daily words mapping (26 per day, letters A-Z)
     c.execute('''CREATE TABLE IF NOT EXISTS daily_words (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -49,7 +43,6 @@ def init_db():
         FOREIGN KEY(daily_set_id) REFERENCES daily_sets(id),
         FOREIGN KEY(word_id) REFERENCES words(id)
     )''')
-
     # User progress for testing/learning
     c.execute('''CREATE TABLE IF NOT EXISTS user_progress (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -64,7 +57,6 @@ def init_db():
         FOREIGN KEY(user_id) REFERENCES users(id),
         FOREIGN KEY(word_id) REFERENCES words(id)
     )''')
-
     # Error list for wrong answers history
     c.execute('''CREATE TABLE IF NOT EXISTS user_errors (
         id INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -75,12 +67,10 @@ def init_db():
         FOREIGN KEY(user_id) REFERENCES users(id),
         FOREIGN KEY(word_id) REFERENCES words(id)
     )''')
-
     conn.commit()
     conn.close()
 
 # -------------------- Auth helpers --------------------
-
 def login_required(f):
     @wraps(f)
     def decorated_function(*args, **kwargs):
@@ -90,7 +80,6 @@ def login_required(f):
     return decorated_function
 
 # -------------------- Dictionary API --------------------
-
 def fetch_word_definition(word):
     try:
         url = f"https://api.dictionaryapi.dev/api/v2/entries/en/{word}"
@@ -107,7 +96,6 @@ def fetch_word_definition(word):
     return "Definition not available", "No example available"
 
 # -------------------- Daily 26 words generator --------------------
-
 SEED_WORDS = [
     # At least a couple per letter to allow uniqueness
     'abate','abjure','abyss','banal','bastion','befriend','cadence','cajole','candid','daunt','debunk','decipher',
@@ -118,14 +106,13 @@ SEED_WORDS = [
     'ubiquitous','ulterior','umbrage','vacuous','valiant','venerable','wane','wary','witty','xenial','xeric','xiphoid',
     'yare','yeoman','yield','zeal','zenith','zephyr'
 ]
-LETTERS = [chr(c) for c in range(ord('A'), ord('Z')+1)]
 
+LETTERS = [chr(c) for c in range(ord('A'), ord('Z')+1)]
 
 def ensure_daily_set(date_str: str):
     """Ensure a daily_set with 26 unique words (A-Z) exists for date_str."""
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
-
     # If set exists, just return mapping
     c.execute('SELECT id FROM daily_sets WHERE date_assigned = ?', (date_str,))
     row = c.fetchone()
@@ -133,11 +120,9 @@ def ensure_daily_set(date_str: str):
         daily_set_id = row[0]
         conn.close()
         return daily_set_id
-
     # Create set
     c.execute('INSERT INTO daily_sets(date_assigned) VALUES (?)', (date_str,))
     daily_set_id = c.lastrowid
-
     # To maintain uniqueness for the day, pick one word per letter A-Z.
     # Try to find a word from SEED_WORDS starting with each letter; if none, generate a fallback pseudo-word.
     for letter in LETTERS:
@@ -146,7 +131,6 @@ def ensure_daily_set(date_str: str):
             # Fallback deterministic pseudo word
             candidates = [f"{letter.lower()}-word-{random.randint(100,999)}"]
         chosen = random.choice(candidates)
-
         # Insert or reuse in words table
         c.execute('SELECT id FROM words WHERE word = ?', (chosen,))
         wrow = c.fetchone()
@@ -156,10 +140,8 @@ def ensure_daily_set(date_str: str):
             definition, example = fetch_word_definition(chosen)
             c.execute('INSERT INTO words(word, definition, example) VALUES(?,?,?)', (chosen, definition, example))
             word_id = c.lastrowid
-
         # Map to daily_words
         c.execute('INSERT OR IGNORE INTO daily_words(daily_set_id, word_id, letter) VALUES(?,?,?)', (daily_set_id, word_id, letter))
-
     conn.commit()
     conn.close()
     return daily_set_id
@@ -168,7 +150,6 @@ def ensure_daily_set(date_str: str):
 def get_today_words():
     today = date.today().isoformat()
     daily_set_id = ensure_daily_set(today)
-
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute('''SELECT w.id, w.word, w.definition, w.example, dw.letter
@@ -182,12 +163,12 @@ def get_today_words():
     ]
 
 # -------------------- App routes --------------------
-
 @app.route('/')
 def index():
     if 'user_id' in session:
         return redirect(url_for('dashboard'))
     return redirect(url_for('login'))
+
 
 @app.route('/register', methods=['GET', 'POST'])
 def register():
@@ -208,6 +189,7 @@ def register():
             conn.close()
     return render_template('register.html')
 
+
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     if request.method == 'POST':
@@ -225,32 +207,31 @@ def login():
         return render_template('login.html', error='Invalid credentials')
     return render_template('login.html')
 
+
 @app.route('/logout')
 def logout():
     session.clear()
     return redirect(url_for('login'))
 
+
 @app.route('/dashboard')
 @login_required
 def dashboard():
     today_words = get_today_words()
-
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     c.execute('''SELECT COUNT(*) FROM user_progress WHERE user_id = ? AND learned = 1''', (session['user_id'],))
     words_learned = c.fetchone()[0]
-
     c.execute('''SELECT w.word, w.definition, up.correct_count, up.incorrect_count
                  FROM user_progress up JOIN words w ON up.word_id = w.id
                  WHERE up.user_id = ? AND up.learned = 1
                  ORDER BY up.last_tested_at DESC LIMIT 5''', (session['user_id'],))
     recent_words = c.fetchall()
     conn.close()
-
     return render_template('dashboard.html', today_words=today_words, words_learned=words_learned, recent_words=recent_words)
 
-# -------------------- Take Test (5 untested words) --------------------
 
+# -------------------- Take Test (5 untested words) --------------------
 @app.route('/take_test')
 @login_required
 def take_test():
@@ -266,6 +247,7 @@ def take_test():
     conn.close()
     return render_template('take_test.html', questions=q)
 
+
 @app.route('/submit_test', methods=['POST'])
 @login_required
 def submit_test():
@@ -274,7 +256,6 @@ def submit_test():
     ids = request.form.getlist('word_id')
     correctness = request.form.getlist('is_correct')
     now = datetime.utcnow().isoformat(' ')
-
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     for i, wid in enumerate(ids):
@@ -287,21 +268,21 @@ def submit_test():
                          correct_count = user_progress.correct_count + excluded.correct_count,
                          incorrect_count = user_progress.incorrect_count + excluded.incorrect_count,
                          learned = CASE WHEN user_progress.correct_count + excluded.correct_count >= 3 AND user_progress.incorrect_count + excluded.incorrect_count = 0 THEN 1 ELSE user_progress.learned END''',
-                  (session['user_id'], wid, now, now, 1 if correct else 0, 0 if correct else 1, 1 if correct else 0))
+                 (session['user_id'], wid, now, now, 1 if correct else 0, 0 if correct else 1, 1 if correct else 0))
         if correct:
             # remove from errors if present
             c.execute('DELETE FROM user_errors WHERE user_id = ? AND word_id = ?', (session['user_id'], wid))
         else:
             # add/update error list
-            c.execute('INSERT INTO user_errors(user_id, word_id, last_wrong_at) VALUES(?,?,?)
-                       ON CONFLICT(user_id, word_id) DO UPDATE SET last_wrong_at = excluded.last_wrong_at',
+            c.execute('''INSERT INTO user_errors(user_id, word_id, last_wrong_at) VALUES(?,?,?)
+                       ON CONFLICT(user_id, word_id) DO UPDATE SET last_wrong_at = excluded.last_wrong_at''',
                       (session['user_id'], wid, now))
     conn.commit()
     conn.close()
     return redirect(url_for('dashboard'))
 
-# -------------------- Error-only Test --------------------
 
+# -------------------- Error-only Test --------------------
 @app.route('/error_test')
 @login_required
 def error_test():
@@ -314,13 +295,13 @@ def error_test():
     conn.close()
     return render_template('error_test.html', questions=q)
 
+
 @app.route('/submit_error_test', methods=['POST'])
 @login_required
 def submit_error_test():
     ids = request.form.getlist('word_id')
     correctness = request.form.getlist('is_correct')
     now = datetime.utcnow().isoformat(' ')
-
     conn = sqlite3.connect(DB_PATH)
     c = conn.cursor()
     for i, wid in enumerate(ids):
@@ -337,12 +318,13 @@ def submit_error_test():
             # Allow clearing the error on pass
             c.execute('DELETE FROM user_errors WHERE user_id = ? AND word_id = ?', (session['user_id'], wid))
         else:
-            c.execute('INSERT INTO user_errors(user_id, word_id, last_wrong_at) VALUES(?,?,?)
-                       ON CONFLICT(user_id, word_id) DO UPDATE SET last_wrong_at = excluded.last_wrong_at',
+            c.execute('''INSERT INTO user_errors(user_id, word_id, last_wrong_at) VALUES(?,?,?)
+                       ON CONFLICT(user_id, word_id) DO UPDATE SET last_wrong_at = excluded.last_wrong_at''',
                       (session['user_id'], wid, now))
     conn.commit()
     conn.close()
     return redirect(url_for('error_test'))
+
 
 # Endpoint to clear a single error manually after passing
 @app.route('/clear_error', methods=['POST'])
@@ -355,6 +337,7 @@ def clear_error():
     conn.commit()
     conn.close()
     return jsonify({'success': True})
+
 
 # -------------------- Review (existing) --------------------
 @app.route('/review')
