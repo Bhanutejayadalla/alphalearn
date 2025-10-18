@@ -1,0 +1,21 @@
+<!doctype html>
+<html>
+<head><meta charset="utf-8"><title>Take Test</title></head>
+<body>
+  <h1>Take Test: 5 Untested Words</h1>
+  <form method="post" action="/submit_test">
+    {% for id, word, definition in questions %}
+      <div class="q">
+        <h3>{{ loop.index }}. {{ word }}</h3>
+        <p>{{ definition }}</p>
+        <input type="hidden" name="word_id" value="{{ id }}">
+        <label><input type="radio" name="is_correct" value="1" required> I know this</label>
+        <label><input type="radio" name="is_correct" value="0"> I don't know</label>
+      </div>
+      <hr>
+    {% endfor %}
+    <button type="submit">Submit</button>
+  </form>
+  <p><a href="/dashboard">Back to Dashboard</a></p>
+</body>
+</html>
