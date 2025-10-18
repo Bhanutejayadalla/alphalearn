@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Review - Alpha Learn</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <nav class="navbar">
+        <div class="nav-container">
+            <h1>Alpha Learn</h1>
+            <div class="nav-links">
+                <a href="{{ url_for('dashboard') }}" class="btn-secondary">Dashboard</a>
+                <a href="{{ url_for('logout') }}" class="btn-secondary">Logout</a>
+            </div>
+        </div>
+    </nav>
+    
+    <div class="container">
+        <div class="review-section">
+            <h2>Review Your Words</h2>
+            
+            {% if learned_words %}
+            <div class="words-grid">
+                {% for word in learned_words %}
+                <div class="word-review-card">
+                    <h3>{{ word[1] }}</h3>
+                    <p><strong>Definition:</strong> {{ word[2] }}</p>
+                    <p><strong>Example:</strong> {{ word[3] }}</p>
+                    <span class="review-badge">Reviewed {{ word[4] }} times</span>
+                </div>
+                {% endfor %}
+            </div>
+            {% else %}
+            <div class="empty-state">
+                <p>You haven't learned any words yet. Start learning from the dashboard!</p>
+                <a href="{{ url_for('dashboard') }}" class="btn-primary">Go to Dashboard</a>
+            </div>
+            {% endif %}
+        </div>
+    </div>
+</body>
+</html>
